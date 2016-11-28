@@ -5,6 +5,7 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import Control.Monad.State
 
+-- | Type inference state: an integer to generate fresh type variables
 type InferState = Int
 
 type Env   = M.Map VarID Type
@@ -97,7 +98,7 @@ unify (Forall vars1 body1) (Forall vars2 body2) = do
         renameBoth [] v2 = return ([], [], [], v2)
 unify t1 t2 = error $ "Cannot unify " ++ (show t1) ++ " and " ++ (show t2)
 
--- | Returns the set of variables in two polymorphic types
+-- | Returns the substitution that makes two polymorphic types equal
 subsume :: Type -> Type -> State InferState Subst
 subsume (Forall vars1 body1) (Forall var2 body2) = do
     renamed <- mapM rename vars1
@@ -151,12 +152,10 @@ infer env (Let bindings body) = do
             (curSubst, curType) <- infer env expr
             return (unionSubst subst curSubst, (var, curType) : varTypes)
 -- Lambda abstraction
-infer env (Abs var Nothing body) = do
-    name <- genName
-    (s, typeBody) <- infer (M.insert var (TypeVar name) env) body
-    let t = generalize (applySubstToEnv s env) (applySubstToType s (Lambda (TypeVar name) (skipForall typeBody)))
-    return (s, t)
-infer env (Abs var (Just varType) body) = do
+infer env (Abs var optType body) = do
+    varType <- case optType of
+        Just t -> return t
+        _      -> genName >>= (return . TypeVar)
     (s, typeBody) <- infer (M.insert var varType env) body
     let t = generalize (applySubstToEnv s env) (applySubstToType s (Lambda varType (skipForall typeBody)))
     return (s, t)
