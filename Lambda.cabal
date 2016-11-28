@@ -1,0 +1,23 @@
+name:                Lambda
+version:             0.1.0.0
+synopsis:            A simple functional language.
+license:             LGPL-3
+license-file:        LICENSE.txt
+author:              Arsène Pérard-Gayot
+maintainer:          arsene.perard@laposte.net
+category:            Language
+build-type:          Simple
+cabal-version:       >=1.10
+
+library
+  default-language:    Haskell2010
+  build-depends:       base, mtl, containers
+  exposed-modules:     Lambda.AST, Lambda.Infer
+  ghc-options:         -Wall
+  hs-source-dirs:      src
+
+executable Lambda
+  default-language:    Haskell2010
+  main-is:             Main.hs
+  hs-source-dirs:      src
+  build-depends:       Lambda, base, mtl, containers
