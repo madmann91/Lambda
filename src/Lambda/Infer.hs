@@ -37,7 +37,7 @@ unionSubst s1 s2 = M.union s1' s2'
         s2' = M.map (applySubstToType s1') s2
 
 -- | Returns the set of free type variables in a type
-freeTypeVars :: Type -> S.Set VarID
+freeTypeVars :: Type -> S.Set TypeID
 freeTypeVars (TypeVar var) = S.singleton var
 freeTypeVars (Lambda t1 t2) = S.union (freeTypeVars t1) (freeTypeVars t2)
 freeTypeVars (Forall bindings body) = S.filter (\k -> not $ elem k bindings) (freeTypeVars body)
