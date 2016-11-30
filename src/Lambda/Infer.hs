@@ -100,14 +100,16 @@ unify t1 t2 = error $ "Cannot unify " ++ (show t1) ++ " and " ++ (show t2)
 
 -- | Returns the substitution that makes two polymorphic types equal
 subsume :: Type -> Type -> State InferState Subst
-subsume (Forall vars1 body1) (Forall var2 body2) = do
+subsume (Forall vars1 body1) t = do
     renamed <- mapM rename vars1
     let subst = M.fromList renamed
-    s <- unify (applySubstToType subst body1) body2
-    -- TODO: Escape check
-    return $ M.filterWithKey (\k _ -> not $ elem k var2) s
-subsume (TypeVar var) t2 = return $ M.singleton var t2
-subsume t1 t2 = error $ "Cannot subsume " ++ (show t1) ++ " and " ++ (show t2)
+    case t of
+        Forall vars2 body2 -> do
+            s <- unify (applySubstToType subst body1) body2
+            -- TODO: Escape check
+            return $ M.filterWithKey (\k _ -> not $ elem k vars2) s
+        _ -> unify (applySubstToType subst body1) t
+subsume t1 t2 = unify t1 (skipForall t2)
 
 -- | Generalizes a type by abstracting over its free type variables
 generalize :: Env -> Type -> Type
