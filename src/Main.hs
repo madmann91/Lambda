@@ -12,6 +12,7 @@ main = print t
         -- Application function: \f . \x . f x
         apply = Abs "f" Nothing (Abs "x" Nothing $ App (Var "f") (Var "x"))
 
-        ast = Let [("const", const), ("id", id), ("apply", apply)] $ App (Var "apply") $ App (Var "const") (Var "id")
+        ast = Let [("const", const), ("id", id), ("apply", apply)] $ App (App (Var "const") $ App (Var "apply") (Var "apply")) (Var "id")
+
         -- The inferred type should be: forall a b . a -> b -> b
         ((s, t), _) = runState (infer emptyEnv ast) 1

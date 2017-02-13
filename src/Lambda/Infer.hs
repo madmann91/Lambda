@@ -69,7 +69,7 @@ makeForall newVars t = Forall newVars t
 unify :: Type -> Type -> State InferState Subst
 unify (TypeVar var1) t2 =
     case t2 of
-        TypeVar _ -> return M.empty
+        TypeVar _ -> return $ M.singleton var1 t2
         _         -> if S.member var1 (freeTypeVars t2)
             then error "Type variable occurs in right hand side"
             else return $ M.fromList [(var1, t2)]
@@ -77,7 +77,7 @@ unify t1 (TypeVar var2) = unify (TypeVar var2) t1
 unify (Lambda t1 t2) (Lambda u1 u2) = do
     s1 <- unify t1 u1
     s2 <- unify (applySubstToType s1 t2) (applySubstToType s1 u2)
-    return s2
+    return $ unionSubst s1 s2
 unify (Forall vars1 body1) (Forall vars2 body2) = do
     (s1, rest1, s2, rest2) <- renameBoth vars1 vars2
     let renamed1 = abstract rest1 (applySubstToType (M.fromList s1) body1)
@@ -109,6 +109,7 @@ subsume (Forall vars1 body1) t = do
             -- TODO: Escape check
             return $ M.filterWithKey (\k _ -> not $ elem k vars2) s
         _ -> unify (applySubstToType subst body1) t
+subsume t1 t2@(Forall _ _) = subsume t2 t1
 subsume t1 t2 = unify t1 (skipForall t2)
 
 -- | Generalizes a type by abstracting over its free type variables
@@ -167,7 +168,7 @@ infer env (App e1 e2) = do
     (s1, Lambda from to) <- funMatch $ skipForall t0
     (s2, t2) <- infer (applySubstToEnv s1 env) e2
     subsumed <- subsume (applySubstToType s2 from) t2
-    let (poly3, mono3) = split subsumed 
+    let (poly3, mono3) = split subsumed
     let s4 = unionSubst mono3 $ unionSubst s2 s1
     -- TODO: Check for polymorphic parameters
     let t = applySubstToType poly3 $ applySubstToType s4 to
